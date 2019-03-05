@@ -1,7 +1,7 @@
 # title: "Outgroup f3 per population on GW data"
 # author: "Dang Liu 04.Mar.2019"
 
-# Last updated: 04.Mar.2019
+# Last updated: 05.Mar.2019
 
 # Use libraries
 library(tidyverse)
@@ -29,13 +29,16 @@ colnames(info2)[1] <- "Pop2"
 
 
 # Prepare data set for annotation and order
-d <- f3_res %>% left_join(info2[!info2$Pop2 %in% c("Mbuti","French"),]) %>% left_join(info3[!info3$Pop %in% c("Mbuti","French"),])
+d <- f3_res %>% left_join(info2[!info2$Pop2 %in% c("Mbuti","French"),]) #%>% left_join(info3[!info3$Pop %in% c("Mbuti","French"),])
 d$Country <- factor(d$Country, levels=c("Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India"), ordered=T)
 d <- d[order(d$Country),]
 # Exclude pops here
 pop_exclude <- c("Atayal1","Ami1","Paiwan","Bunun","Rukai","Tao","Mamanwa1","Tianyuan")
 d <- d[!d$Pop%in%pop_exclude,]
 d <- d[!d$Pop2%in%pop_exclude,] 
+
+# Exclude ancient samples if too few snps
+#d <- d[!d$Type%in%c("ancient"),]
 
 # Add language groups for Vietnam only
 d$Language <- "NA"
