@@ -84,18 +84,73 @@ p
 
 #######################################################################################################
 
-# Read within data
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/Merged.pop.ibd.2cM.within.len", header=T)
-data <- data[data$Country=="Vietnam",]
+# Read len data
+
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/Merged.pop.ibd.2cM.len", header=T)
+data <- data[data$Country1=="Vietnam",]
+data <- data[data$Pop1!=data$Pop2,]
 head(data)
-count <- count(data,var=Pop)
-colnames(count) <- c("Pop", "N")
+count <- count(data,var=Pop1)
+colnames(count) <- c("Pop1", "N")
+data <- data %>% left_join(count)
+head(data)
+
+data$Pop1 <- factor(data$Pop1, levels=c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"), ordered=T)
+
+# Add language groups for Vietnam only
+data$Language <- "NA"
+data <- mutate(data,Language = ifelse(Pop1%in%c("BoY","CoLao","LaChi","Nung","Tay","Thai"),"Tai-Kadai",Language))
+data <- mutate(data,Language = ifelse(Pop1%in%c("Dao","Hmong","PaThen"),"Hmong-Mien",Language))
+data <- mutate(data,Language = ifelse(Pop1%in%c("Cham","Ede","Giarai"),"Austronesian",Language))
+data <- mutate(data,Language = ifelse(Pop1%in%c("Cong","HaNhi","LaHu","LoLo","PhuLa","Sila"),"Sino-Tibetan",Language))
+data <- mutate(data,Language = ifelse(Pop1%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-Asiatic",Language))
+
+# Subset data here
+#data <- data[data$Language=="Tai-Kadai",]
+#data <- data[data$Language=="Hmong-Mien",]
+#data <- data[data$Language=="Austronesian",]
+#data <- data[data$Language=="Sino-Tibetan",]
+#data <- data[data$Language=="Austro-Asiatic",]
+
+
+p <- ggplot(data, aes(x = Pop2, y = Length, fill=N_ind))
+p <- p + geom_boxplot(outlier.size=0.5, outlier.shape=16, notch=F)
+p <- p + coord_cartesian(ylim=c(2,9))
+p <- p + labs(x=NULL, y="Block size (cM)", fill="Normalized block number (n)")
+p <- p + scale_fill_gradient(low="lightblue", high="red")
+p <- p + theme(axis.line.x = element_line(color="black", size = 0.5, linetype = 1),
+               axis.line.y = element_line(color="black", size = 0.5, linetype = 1))
+#p <- p + facet_wrap(.~Pop1, ncol=3, scales="free_x")
+p <- p + facet_wrap(.~Pop1, nrow=4, scales="free_x")
+p <- p + theme(panel.background = element_blank())
+p <- p + theme(legend.text = element_text(size = 12), legend.title = element_text(size = 12))
+p <- p + theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14))
+p <- p + theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
+p <- p + theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size=12))
+p <- p + theme(axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1))
+p <- p + scale_x_discrete(limits=unique(data$Pop2))
+p
+
+
+
+
+
+
+#######################################################################################################
+
+# Analyze within Pop
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/Merged.pop.ibd.2cM.len", header=T)
+data <- data[data$Country1=="Vietnam",]
+data <- data[data$Pop1==data$Pop2,]
+head(data)
+count <- count(data,var=Pop1)
+colnames(count) <- c("Pop1", "N")
 data <- data %>% left_join(count)
 head(data)
 
 #d2 <- data[order(data$N_ind),]
 
-p <- ggplot(data, aes(x = reorder(Pop, Length, FUN=median), y = Length, fill=N_ind))
+p <- ggplot(data, aes(x = reorder(Pop1, Length, FUN=median), y = Length, fill=N_ind))
 p <- p + geom_boxplot(outlier.size=0.5, outlier.shape=16, notch=F)
 sts <- boxplot.stats(data$Length)$stats
 p <- p + coord_cartesian(ylim=c(min(sts)*1.25,max(sts)*1.25))
