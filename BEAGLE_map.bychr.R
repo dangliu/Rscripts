@@ -6,7 +6,7 @@ in1 <- args[1]
 
 # function
 dec_pla <- function(n,dec_pla){
-  as.numeric(format(round(n,dec_pla), nsmall = dec_pla))
+  sprintf(as.numeric(format(round(n,dec_pla), nsmall = dec_pla)), fmt = paste("%#.",dec_pla,"f", sep=""))
 }
 
 
