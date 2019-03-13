@@ -1,7 +1,7 @@
 # title: "Outgroup f3 per population on GW data"
 # author: "Dang Liu 04.Mar.2019"
 
-# Last updated: 05.Mar.2019
+# Last updated: 13.Mar.2019
 
 # Use libraries
 library(tidyverse)
@@ -12,7 +12,7 @@ library(maps)
 library(ggrepel)
 
 # load data from a huge f3 comparing matrix
-load("/mnt/scratch/dang/Vietnam/outgroup_f3/HO.ancient.outgroup.Mbuti_f3.Rdata")
+load("/mnt/scratch/dang/Vietnam/outgroup_f3/HO.ancient.outgroup.French_f3.Rdata")
 colnames(f3_res)[1:3] <- c("Pop", "Pop2", "Outgroup")
 head(f3_res)
 info <- read.table("/mnt/scratch/dang/Vietnam/outgroup/HO.ancient.outgroup.geo.info", header=T)
@@ -22,14 +22,14 @@ info2 <- info %>% group_by(Pop) %>%
   left_join(select(info,-(FID:IID),-(Latitude:Longitude))) %>%
   distinct(Pop, .keep_all = TRUE)
 
-#info3 <- info2 %>% select(-Latitude, -Longitude)
+# Add Period info for pop1
+info3 <- info2 %>% select(Pop, Period)
 
-#info2 <- info2 %>% select(Pop, Latitude, Longitude)
 colnames(info2)[1] <- "Pop2"
-
+colnames(info3) <- c("Pop", "Pop_Period")
 
 # Prepare data set for annotation and order
-d <- f3_res %>% left_join(info2[!info2$Pop2 %in% c("Mbuti","French"),]) #%>% left_join(info3[!info3$Pop %in% c("Mbuti","French"),])
+d <- f3_res %>% left_join(info2[!info2$Pop2 %in% c("Mbuti","French"),]) %>% left_join(info3[!info3$Pop %in% c("Mbuti","French"),])
 d$Country <- factor(d$Country, levels=c("Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India"), ordered=T)
 d <- d[order(d$Country),]
 # Exclude pops here
@@ -57,6 +57,10 @@ d2 <- d[d$Language!="NA",]
 #d2 <- d[d$Language=="Sino-Tibetan",]
 #d2 <- d[d$Language=="Austro-Asiatic",]
 
+# Subset py Period
+#d2 <- d[d$Pop_Period!="P",]
+
+
 d2[d2$nsnps==-1,]$f3 <- NA
 d2$Target <- ifelse(d2$Pop==d2$Pop2, "T", "F")
 
@@ -66,7 +70,7 @@ d2 <- d2[order(d2$Period),]
 
 # Order by Language groups
 d2$Pop <- factor(d2$Pop, levels=c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"), ordered=T)
-
+#d2$Pop <- factor(d2$Pop, levels=c("Hon_Hai_Co_Tien","Kinabatagan","Supu_Hujung","Long_Long_Rak","Vat_Komnou","Nui_Nap","Loyang_Ujung","Mai_Da_Dieu","Nam_Tun","Oakaiel","Tam_Pa_Ping","Man_Bac","Tam_Hang","Gua_Cha","Pha_Faen"), ordered=T)
 # Normalization for min to max --> 0 to 1
 d2$normalized_f3 <- "NA"
 n <- 0
@@ -89,7 +93,7 @@ p <- p + geom_point(data=d2, aes(x=Longitude, y=Latitude, color=normalized_f3, p
 p <- p + scale_colour_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"))
 p <- p + scale_shape_manual(values=c(19,7,8,9,10,11,12,13))
 p <- p + geom_point(data=d2[d2$Target=="T",], aes(x=Longitude, y=Latitude), pch=17, size=4, color="black")
-#p <- p + facet_wrap(.~Pop, ncol=3)
+# <- p + facet_wrap(.~Pop, ncol=3)
 p <- p + facet_wrap(.~Pop, nrow=4)
 
 p <- p + theme(legend.text = element_text(size = 12), legend.title = element_text(size = 14))
