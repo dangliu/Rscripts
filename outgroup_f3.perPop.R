@@ -1,7 +1,7 @@
 # title: "Outgroup f3 per population on GW data"
 # author: "Dang Liu 04.Mar.2019"
 
-# Last updated: 13.Mar.2019
+# Last updated: 25.Mar.2019
 
 # Use libraries
 library(tidyverse)
@@ -12,7 +12,7 @@ library(maps)
 library(ggrepel)
 
 # load data from a huge f3 comparing matrix
-load("/mnt/scratch/dang/Vietnam/outgroup_f3/HO.ancient.outgroup.French_f3.Rdata")
+load("/mnt/scratch/dang/Vietnam/outgroup_f3/HO.ancient.outgroup.Mbuti_f3.Rdata")
 colnames(f3_res)[1:3] <- c("Pop", "Pop2", "Outgroup")
 head(f3_res)
 info <- read.table("/mnt/scratch/dang/Vietnam/outgroup/HO.ancient.outgroup.geo.info", header=T)
@@ -71,6 +71,41 @@ d2 <- d2[order(d2$Period),]
 # Order by Language groups
 d2$Pop <- factor(d2$Pop, levels=c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"), ordered=T)
 #d2$Pop <- factor(d2$Pop, levels=c("Hon_Hai_Co_Tien","Kinabatagan","Supu_Hujung","Long_Long_Rak","Vat_Komnou","Nui_Nap","Loyang_Ujung","Mai_Da_Dieu","Nam_Tun","Oakaiel","Tam_Pa_Ping","Man_Bac","Tam_Hang","Gua_Cha","Pha_Faen"), ordered=T)
+
+#########################################################3
+
+# Visualization I: point with error bar per pop 
+
+# Order Pop2 by country
+#d2$Pop2 <- factor(d2$Pop2, levels=c("Atayal","Hakka","Minnan","Pingpu","Ami","Han","Yi","Miao","Dai","Lahu","She","Naxi","Kinh","BoY","Cham","CoLao","Cong","Dao","Ede","Giarai","HaNhi","Hmong","KhoMu","LaChi","LaHu","LoLo","Mang","Muong","Nung","PaThen","PhuLa","Sila","Tay","Thai","Man_Bac","Nui_Nap","Hon_Hai_Co_Tien","Mai_Da_Dieu","Nam_Tun","Cambodian","Vat_Komnou","Tam_Pa_Ping","Pha_Faen","Tam_Hang","Thai1","Mlabri","Htin_Mal","Long_Long_Rak","Oakaiel","Supu_Hujung","Kinabatagan","Gua_Cha","Borneo","Semende","Loyang_Ujung","Mamanwa","Onge"))
+
+# X tick 90 angle
+d2 %>% 
+  ggplot(aes(x=Pop2, y=f3, ymin=f3-3*stderr, ymax=f3+3*stderr, color=Country, pch=Period)) + 
+  geom_point() + 
+  geom_errorbar() +
+  geom_hline(yintercept=0) +
+  facet_wrap(~Pop, ncol=3) +
+  #scale_color_brewer(palette="Paired") +
+  scale_color_manual(values=c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#663300")) +
+  scale_shape_manual(values=c(19,7,8,9,10,11,12,13)) +
+  scale_x_discrete(limits=unique(d$Pop2)) +
+  coord_cartesian(ylim=c(0.225,0.325)) +
+  labs(x=NULL) +
+  theme(axis.line.x = element_line(color="black", size = 0.5, linetype = 1),
+        axis.line.y = element_line(color="black", size = 0.5, linetype = 1)) +
+  theme(panel.background = element_blank()) +
+  theme(legend.text = element_text(size = 12), legend.title = element_text(size = 12)) +
+  theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14)) + 
+  theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
+  theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size = 12)) +
+  theme(axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1))
+
+
+###########################################################################################3
+
+# Visualization II: point with gradient color on a map 
+
 # Normalization for min to max --> 0 to 1
 d2$normalized_f3 <- "NA"
 n <- 0
@@ -83,7 +118,6 @@ d2$normalized_f3 <- as.numeric(as.character(d2$normalized_f3))
 # Get hte map
 map.world <- map_data(map="world")
 
-# Visualization
 # fix the limits with geo lon lat coordinates, according to the space you want to show by coord_quickmap
 p <- ggplot()
 p <- p + theme()
@@ -102,4 +136,3 @@ p <- p + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text
 p <- p + theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size=12))
 p <- p + xlab("Longitude") + ylab("Latitude")
 p
-
