@@ -1,6 +1,6 @@
 # author: "Dang Liu 11.Mar.2019"
 
-# Last updated: 12.Mar.2019
+# Last updated: 25.Mar.2019
 
 # Use libraries
 library(tidyverse)
@@ -12,7 +12,7 @@ library(ggrepel)
 
 
 # Read between data
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/Merged.pop.ibd.2cM.pair.stats", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_mk/Merged.pop.ibd.2cM.stats", header=T)
 head(data)
 
 # Pop info
@@ -87,7 +87,7 @@ p
 
 # Read len data
 
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/Merged.pop.ibd.2cM.pair.L.N", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_mk/Merged.pop.ibd.2cM.L.N", header=T)
 
 data$Country2 <- factor(data$Country2, levels=c("Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India"), ordered=T)
 data <- data[order(data$Country2),]
@@ -117,14 +117,15 @@ data <- mutate(data,Language = ifelse(Pop1%in%c("Cong","HaNhi","LaHu","LoLo","Ph
 data <- mutate(data,Language = ifelse(Pop1%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-Asiatic",Language))
 
 # Subset data here
-#data <- data[data$Language=="Tai-Kadai",]
-#data <- data[data$Language=="Hmong-Mien",]
-#data <- data[data$Language=="Austronesian",]
-#data <- data[data$Language=="Sino-Tibetan",]
-#data <- data[data$Language=="Austro-Asiatic",]
+d2 <- data
+#d2 <- data[data$Language=="Tai-Kadai",]
+#d2 <- data[data$Language=="Hmong-Mien",]
+#d2 <- data[data$Language=="Austronesian",]
+#d2 <- data[data$Language=="Sino-Tibetan",]
+#d2 <- data[data$Language=="Austro-Asiatic",]
 
 
-p <- ggplot(data, aes(x = Pop2, y = Length, fill=A_N))
+p <- ggplot(d2, aes(x = Pop2, y = Length, fill=A_N))
 p <- p + geom_boxplot(outlier.size=0.5, outlier.shape=16, notch=F)
 p <- p + coord_cartesian(ylim=c(2,100))
 p <- p + labs(x=NULL, y="Total block length (cM)", fill="Block number mean (n)")
@@ -150,7 +151,7 @@ p
 #######################################################################################################
 
 # Analyze within Pop
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/Merged.pop.ibd.2cM.pair.L.N", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_mk/Merged.pop.ibd.2cM.L.N", header=T)
 data <- data[data$Country1=="Vietnam",]
 data <- data[data$Pop1==data$Pop2,]
 head(data)
