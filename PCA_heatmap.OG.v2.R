@@ -96,24 +96,33 @@ df_heatmap <- heatmap(norm_data_n, Rowv=NA, Colv=NA, col = heat.colors(256), sca
 ###############################################################################
 
 # Read data
-data <- read.table("/mnt/scratch/dang/Vietnam/pca/ancient_proj/all.Vietnam.lsqproj.evec",header=F)
-info <- read.table("/mnt/scratch/dang/Vietnam/pca/ancient_proj/Vietnam.am.info", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/pca/outgroup.v2/Vietnam.am.pruned.evec",header=F)
+info <- read.table("/mnt/scratch/dang/Vietnam/map/all.map.am.geo.info2", header=T)
 # Arrange data
 colnames(data) <- c("IID","PC1","PC2","PC3","PC4","PC5","PC6","PC7","PC8","PC9","PC10","C")
 data <- data[,!(colnames(data)=="C")] 
+info$Language <- "X"
+info <- mutate(info,Language = ifelse(Pop%in%c("BoY","CoLao","LaChi","Nung","Tay","Thai"),"Tai-Kadai",Language))
+info <- mutate(info,Language = ifelse(Pop%in%c("Dao","Hmong","PaThen"),"Hmong-Mien",Language))
+info <- mutate(info,Language = ifelse(Pop%in%c("Cham","Ede","Giarai"),"Austronesian",Language))
+info <- mutate(info,Language = ifelse(Pop%in%c("Cong","HaNhi","LaHu","LoLo","PhuLa","Sila"),"Sino-Tibetan",Language))
+info <- mutate(info,Language = ifelse(Pop%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-Asiatic",Language))
+
 data <- info[,!(colnames(info)=="Type")] %>% left_join(data)
 head(data)
-data <- data[data$IID!="I2497",]
+data <- data[is.na(data$PC1)==F,]
+
+data <- data[data$Language!="X",]
 
 # Sort data by country
 # Ref: https://stackoverflow.com/questions/1296646/how-to-sort-a-dataframe-by-multiple-columns
 # Ref2: https://www.statmethods.net/management/sorting.html
-data$Period <- factor(data$Period, levels=c("P","Hi","IA","BA","LN","N","Ho"))
-data <- data[order(data$Period),]
+data$Language <- factor(data$Language, levels=c("Austronesian","Austro-Asiatic","Hmong-Mien","Sino-Tibetan","Tai-Kadai"), ordered=T)
+data <- data[order(data$Language),]
 
 # Normalizing the sample PC vectors on each PC
 norm_data <- data
-n <- 7
+n <- 10
 while(n<ncol(data)){
   n <- n+1
   norm_data[,n] <- (norm_data[,n]+(0-min(data[,n])))/max(data[,n]+(0-min(data[,n])))
@@ -121,7 +130,7 @@ while(n<ncol(data)){
 
 # Subset the information with only IID and PCs
 # Trun them into a matrix
-norm_data_n <- norm_data[,8:ncol(data)]
+norm_data_n <- norm_data[,11:ncol(data)]
 rownames(norm_data_n) <- data$IID
 norm_data_n <- as.matrix(norm_data_n)
 # Transpose
@@ -137,12 +146,14 @@ rn <- mixedsort(rownames(t_norm_data_n),decreasing=T)
 # Ref2: https://www.rdocumentation.org/packages/COMPASS/versions/1.10.2/topics/pheatmap
 
 # annotaion here
-annotation <- norm_data %>% select(Period)
+annotation <- norm_data %>% select(Language)
 rownames(annotation) <- rownames(norm_data_n)
 # Specify colors
 ann_colors = list(
-  Period = c(P="#999999",Hi="#33A02C",IA="#FB9A99",BA="#663300",LN="#CCCC33",N="#FF7F00",Ho="#3288BD")
+  Language = c("Austronesian"="#CC6633","Austro-Asiatic"="#9966CC","Hmong-Mien"="#FFCC33","Sino-Tibetan"="#66CC99","Tai-Kadai"="#CC0033")
 )
+
+
 
 # plot heatmap
 res <- pheatmap(
