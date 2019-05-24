@@ -12,11 +12,11 @@ library(ggrepel)
 
 
 # Read between data
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_mk/all.IBDand2HBD.tag.stats", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_m2/all.lPSC.tag.stats", header=T)
 head(data)
 
 # Pop info
-info <- read.table("/mnt/scratch/dang/Vietnam/outgroup/HO.ancient.outgroup.geo.info", header=T)
+info <- read.table("/mnt/scratch/dang/Vietnam/outgroup/HO.ancient.outgroup.v2.geo.info", header=T)
 info2 <- info %>% group_by(Pop) %>% 
   summarise_at(vars(Latitude,Longitude), list(~median(.))) %>% 
   left_join(select(info,-(FID:IID),-(Latitude:Longitude))) %>%
@@ -90,7 +90,7 @@ p
 
 # Read len data
 
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_mk/all.IBDand2HBD.tag.L.N", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_m2/all.lPSC.tag.L.N", header=T)
 
 data$Country2 <- factor(data$Country2, levels=c("Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India"), ordered=T)
 data <- data[order(data$Country2),]
@@ -111,6 +111,11 @@ data <- data %>% left_join(average)
 
 data$Pop1 <- factor(data$Pop1, levels=c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"), ordered=T)
 
+# Order x axis by pop_order as admixture plot
+pop_order <- read.table("/mnt/scratch/dang/Vietnam/admixture/outgroup.v2/pong_pop_order.txt", header=F)
+data$Pop2 <- factor(data$Pop2, levels=pop_order$V1, ordered=T)
+data <- data[order(data$Pop2),]
+
 # Add language groups for Vietnam only
 data$Language <- "NA"
 data <- mutate(data,Language = ifelse(Pop1%in%c("BoY","CoLao","LaChi","Nung","Tay","Thai"),"Tai-Kadai",Language))
@@ -123,12 +128,12 @@ data <- mutate(data,Language = ifelse(Pop1%in%c("KhoMu","Kinh","Mang","Muong"),"
 levels(data$Len) <- c("1-5 cM", "5-10 cM", ">10 cM")
 
 # Subset data here
-#d2 <- data
+d2 <- data
 #d2 <- data[data$Language=="Tai-Kadai",]
 #d2 <- data[data$Language=="Hmong-Mien",]
 #d2 <- data[data$Language=="Austronesian",]
 #d2 <- data[data$Language=="Sino-Tibetan",]
-d2 <- data[data$Language=="Austro-Asiatic",]
+#d2 <- data[data$Language=="Austro-Asiatic",]
 
 
 p <- ggplot(d2, aes(x = Pop2, y = Length, fill=A_N))
@@ -156,7 +161,7 @@ p
 #######################################################################################################
 
 # Analyze within Pop
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_mk/all.IBDand2HBD.tag.L.N", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_m2/all.lPSC.tag.L.N", header=T)
 data <- data[data$Country1=="Vietnam",]
 data <- data[data$Pop1==data$Pop2,]
 head(data)
@@ -227,7 +232,7 @@ p
 
 # Plot within pop number vs. length to infer demography without separating by length
 
-data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_mk/all.IBDand2HBD.over2cM.L.N", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_m2/all.lPSC.least2cM.L.N", header=T)
 data <- data[data$Country1=="Vietnam",]
 data <- data[data$Length]
 data <- data[data$Pop1==data$Pop2,]
@@ -263,3 +268,107 @@ p <- p + theme(axis.title.x = element_text(size = 14), axis.title.y = element_te
 p <- p + theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
 p <- p + theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size=12))
 p
+
+
+#######################################################################################################
+
+# MDS
+
+data <- read_delim("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_m2/all.lPSC.Merged.over10cM.stats",delim="\t")
+pop_order <- read_delim("/mnt/scratch/dang/Vietnam/admixture/outgroup.v2/pong_pop_order.txt",delim="\t",col_names = F)
+Affy6 <- c("Puyuma","Saisiat","Manobo","Ternate","Temuan","Roti","Hiri","Besemah","Alor","Flores","Timor","Bidayuh","Jehai")
+Outgroup <- c("French", "Mbuti")
+Ancient <- c("Hon_Hai_Co_Tien","Kinabatagan","Supu_Hujung","Long_Long_Rak","Vat_Komnou","Nui_Nap","Loyang_Ujung","Mai_Da_Dieu","Nam_Tun","Oakaiel","Tam_Pa_Ping","Tam_Hang","Gua_Cha_N","Man_Bac","Gua_Cha_H","Pha_Faen","Tianyuan")
+pop_exclude <- c(Outgroup, Ancient,Affy6)
+m_data <- data %>% filter(!Pop1%in%pop_exclude&!Pop2%in%pop_exclude)
+m_pop_order <- pop_order %>% filter(!X1%in%pop_exclude)
+d.matrix <- matrix(NA, nrow = nrow(m_pop_order), ncol = nrow(m_pop_order))
+colnames(d.matrix) <- m_pop_order$X1
+rownames(d.matrix) <- m_pop_order$X1
+for (i in m_pop_order$X1){
+  for (j in m_pop_order$X1) {
+    if (is.na(m_data[m_data$Pop1==i&m_data$Pop2==j,]$Average)==F){
+      d.matrix[i,j] <- m_data[m_data$Pop1==i&m_data$Pop2==j,]$Average
+    }
+  }
+} 
+
+# Normalizing
+norm_data <- d.matrix
+n <- 0
+c <- 0
+while(n<nrow(d.matrix)){
+  n <- n+1
+  while(c<ncol(d.matrix)){
+    c <- c+1
+    if (is.na(norm_data[n,c])==T){norm_data[n,c] <- mean(norm_data[,n], na.rm=T)}
+    #norm_data[,n] <- 1-(norm_data[,n]+(0-min(data[,n])))/max(data[,n]+(0-min(data[,n])))
+  }
+  c <- 0
+}
+
+n <- 0
+while(n<ncol(norm_data)){
+  n <- n+1
+  norm_data[,n] <- 1-(norm_data[,n]+(0-min(norm_data[,n],na.rm=T)))/max(norm_data[,n]+(0-min(norm_data[,n],na.rm=T)),na.rm=T)
+}
+
+
+mds <- cmdscale(as.dist(norm_data))
+m <- as.data.frame(mds)
+d <- add_rownames(m, "Pop")
+info <- read.table("/mnt/scratch/dang/Vietnam/map/all.map.am.geo.info2", header=T)
+data <- d %>% left_join(select(info,c(Pop,Country,Type,Period))) %>% distinct()
+
+data$Country <- factor(data$Country, levels=c("Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India","France","Congo"))
+
+p <- ggplot(data, aes(x=V1,y=V2,color=Country))
+p <- p + geom_point(aes(color=Country), alpha=0.8)
+#p <- p + geom_text(aes(label=Pop), size=4, vjust = 0, nudge_y = 0.01, size=4, check_overlap=F) #+ stat_ellipse()
+p <- p + geom_text_repel(
+  aes(x=V1, y=V2,label=Pop,color=Country),
+  size=4,
+  point.padding=0.25,
+  segment.alpha=0.5)
+p <- p + scale_color_manual(values=c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#E31A1C","#CAB2D6","#6A3D9A","#B15928","#0000FF","#000000"))
+p <- p + theme(axis.line.x = element_line(color="black", size = 0.5, linetype = 1),
+               axis.line.y = element_line(color="black", size = 0.5, linetype = 1))
+p <- p + theme(panel.background = element_blank()) 
+p <- p + labs(x = "MDS1", y = "MDS2")
+p <- p + theme(legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+p <- p + theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14))
+p <- p + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text(size = 10))
+p
+
+data$Language <- "X"
+data <- mutate(data,Language = ifelse(Pop%in%c("BoY","CoLao","LaChi","Nung","Tay","Thai"),"Tai-Kadai",Language))
+data <- mutate(data,Language = ifelse(Pop%in%c("Dao","Hmong","PaThen"),"Hmong-Mien",Language))
+data <- mutate(data,Language = ifelse(Pop%in%c("Cham","Ede","Giarai"),"Austronesian",Language))
+data <- mutate(data,Language = ifelse(Pop%in%c("Cong","HaNhi","LaHu","LoLo","PhuLa","Sila"),"Sino-Tibetan",Language))
+data <- mutate(data,Language = ifelse(Pop%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-Asiatic",Language))
+
+p2 <- ggplot(data, aes(x=V1,y=V2))
+p2 <- p2 + geom_point(data=data[data$Language=="X",],alpha=0.2)
+p2 <- p2 + geom_text_repel(
+  data=data[data$Language=="X",],
+  aes(x=V1, y=V2,label=Pop),
+  size=4,
+  point.padding=0.25,
+  segment.alpha=0.2, alpha=0.2)
+p2 <- p2 + geom_point(data=data[data$Language!="X",],aes(color=Language))
+p2 <- p2 + geom_text_repel(
+  data=data[data$Language!="X",],
+  aes(x=V1, y=V2,label=Pop,color=Language),
+  size=4,
+  point.padding=0.25,
+  segment.alpha=0.5)
+p2 <- p2 + scale_color_manual(values=c("#9966CC","#CC6633","#FFCC33","#66CC99","#CC0033","#111111"))
+p2 <- p2 + theme(axis.line.x = element_line(color="black", size = 0.5, linetype = 1),
+                 axis.line.y = element_line(color="black", size = 0.5, linetype = 1))
+p2 <- p2 + theme(panel.background = element_blank()) 
+p2 <- p2 + labs(x = "MDS1", y = "MDS2")
+p2 <- p2 + theme(legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+p2 <- p2 + theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14))
+p2 <- p2 + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text(size = 10))
+p2
+
