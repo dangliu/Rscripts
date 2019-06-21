@@ -1,7 +1,7 @@
 # title: "Outgroup f3 per population on GW data"
 # author: "Dang Liu 04.Mar.2019"
 
-# Last updated: 27.May.2019
+# Last updated: 21.Jun.2019
 
 # Use libraries
 library(tidyverse)
@@ -15,7 +15,7 @@ library(ggrepel)
 load("/mnt/scratch/dang/Vietnam/outgroup_f3/HO.ancient.outgroup.v2.Mbuti_f3.Rdata")
 colnames(f3_res)[1:3] <- c("Pop", "Pop2", "Outgroup")
 head(f3_res)
-info <- read.table("/mnt/scratch/dang/Vietnam/outgroup/HO.ancient.outgroup.v2.geo.info", header=T)
+info <- read.table("/mnt/scratch/dang/Vietnam/map/all.map.am.geo.info2", header=T)
 
 info2 <- info %>% group_by(Pop) %>% 
   summarise_at(vars(Latitude,Longitude), funs(median(.))) %>% 
@@ -59,7 +59,7 @@ d <- mutate(d,Language = ifelse(Pop%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-
 
 # Subset data here
 # Only Vietnam modern
-#d2 <- d[d$Language!="NA",]
+d2 <- d[d$Language!="NA",]
 # By language group
 #d2 <- d[d$Language=="Tai-Kadai",]
 #d2 <- d[d$Language=="Hmong-Mien",]
@@ -67,7 +67,7 @@ d <- mutate(d,Language = ifelse(Pop%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-
 #d2 <- d[d$Language=="Sino-Tibetan",]
 #d2 <- d[d$Language=="Austro-Asiatic",]
 # V vs. East and Southeast Asians
-d2 <- d[d$Country!="India"&d$Type=="modern"&d$Language!="NA"&!d$Pop2%in%c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"),]
+#d2 <- d[d$Country!="India"&d$Type=="modern"&d$Language!="NA"&!d$Pop2%in%c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"),]
 # V vs. Indian
 #d2 <- d[d$Country=="India"|d$Type=="ancient",]
 
@@ -79,7 +79,7 @@ d2[d2$nsnps==-1,]$f3 <- NA
 d2$Target <- ifelse(d2$Pop==d2$Pop2, "T", "F")
 
 # Order by Period
-d2$Period <- factor(d2$Period, levels=c("P","Hi","IA","BA","LN","N","Ho","Pa"), ordered=T)
+d2$Period <- factor(d2$Period, levels=c("Present","Historical","Iron_Age","Bronze_Age","Neolithic","Hoabinhian","Paleolithic"), ordered=T)
 d2 <- d2[order(d2$Period),]
 
 # Order by Language groups
@@ -313,6 +313,35 @@ d2 %>%
 
 # Visualization II: point with gradient color on a map 
 
+
+# Add language groups for Vietnam only
+d$Language <- "NA"
+d <- mutate(d,Language = ifelse(Pop%in%c("BoY","CoLao","LaChi","Nung","Tay","Thai"),"Tai-Kadai",Language))
+d <- mutate(d,Language = ifelse(Pop%in%c("Dao","Hmong","PaThen"),"Hmong-Mien",Language))
+d <- mutate(d,Language = ifelse(Pop%in%c("Cham","Ede","Giarai"),"Austronesian",Language))
+d <- mutate(d,Language = ifelse(Pop%in%c("Cong","HaNhi","LaHu","LoLo","PhuLa","Sila"),"Sino-Tibetan",Language))
+d <- mutate(d,Language = ifelse(Pop%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-Asiatic",Language))
+
+# Subset data here
+# Only Vietnam modern
+d2 <- d[d$Language!="NA",]
+
+# Subset 
+d2 <- d2 %>% filter(Type=="modern"&Language=="Sino-Tibetan")
+#d2 <- d2 %>% filter(Type=="ancient"&Language=="Austro-Asiatic")
+
+
+d2[d2$nsnps==-1,]$f3 <- NA
+d2$Target <- ifelse(d2$Pop==d2$Pop2, "T", "F")
+
+# Order by Period
+d2$Period <- factor(d2$Period, levels=c("Present","Historical","Iron_Age","Bronze_Age","Neolithic","Hoabinhian","Paleolithic"), ordered=T)
+d2 <- d2[order(d2$Period),]
+
+# Order by Language groups
+d2$Pop <- factor(d2$Pop, levels=c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"), ordered=T)
+
+
 # Normalization for min to max --> 0 to 1
 d2$normalized_f3 <- "NA"
 n <- 0
@@ -322,6 +351,16 @@ for(i in d2$Pop){
 }
 d2$normalized_f3 <- as.numeric(as.character(d2$normalized_f3))
 
+
+# Adjust for the boundry of minimum
+n <- 0
+for(i in d2$Pop){
+  n <- n + 1
+  d2[n,]$normalized_f3 <- ifelse(d2[n,]$normalized_f3 < 0.75, 0.75, d2[n,]$normalized_f3)
+}
+
+
+
 # Get hte map
 map.world <- map_data(map="world")
 
@@ -329,14 +368,19 @@ map.world <- map_data(map="world")
 p <- ggplot()
 p <- p + theme()
 p <- p + geom_map(data=map.world, map=map.world, aes(map_id=region, x=long, y=lat), fill="white", colour="grey", size=0.15)
-p <- p + coord_quickmap(ylim=c(min(d$Latitude),max(d$Latitude)), xlim=c(min(d$Longitude),max(d$Longitude))) 
+p <- p + coord_quickmap(ylim=c(min(d2$Latitude),max(d2$Latitude)), xlim=c(min(d2$Longitude),max(d2$Longitude))) 
 p <- p + geom_point(data=d2, aes(x=Longitude, y=Latitude, color=normalized_f3, pch=Period), size=3) 
 p <- p + scale_colour_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"))
-p <- p + scale_shape_manual(values=c(19,7,8,9,10,11,12,13))
+p <- p + scale_shape_manual(values=c("Present"=19,"Historical"=7,"Iron_Age"=8,"Bronze_Age"=9,"Neolithic"=10,"Hoabinhian"=11,"Paleolithic"=12))
 p <- p + geom_point(data=d2[d2$Target=="T",], aes(x=Longitude, y=Latitude), pch=17, size=4, color="black")
-# <- p + facet_wrap(.~Pop, ncol=3)
-p <- p + facet_wrap(.~Pop, nrow=4)
-
+p <- p + facet_wrap(.~Pop, ncol=3)
+#p <- p + facet_wrap(.~Pop, nrow=4)
+p <- p + geom_text_repel(
+  data=d2[d2$normalized_f3>0.99&is.na(d2$normalized_f3)==F,], 
+  aes(x=Longitude, y=Latitude,label=Pop2),
+  size=4,
+  point.padding=0.25,
+  segment.alpha=0.5)
 p <- p + theme(legend.text = element_text(size = 12), legend.title = element_text(size = 14))
 p <- p + theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14))
 p <- p + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text(size = 10))
