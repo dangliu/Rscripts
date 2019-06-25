@@ -326,13 +326,29 @@ d <- mutate(d,Language = ifelse(Pop%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-
 # Only Vietnam modern
 d2 <- d[d$Language!="NA",]
 
-# Subset 
-d2 <- d2 %>% filter(Type=="modern"&Language=="Sino-Tibetan")
-#d2 <- d2 %>% filter(Type=="ancient"&Language=="Austro-Asiatic")
 
-
+# Deal with results which Pop=Pop2
+# Set them with a Target tag
 d2[d2$nsnps==-1,]$f3 <- NA
 d2$Target <- ifelse(d2$Pop==d2$Pop2, "T", "F")
+
+# Remove results among Vietnamese groups (To see relationship with neighboting pop only)
+d2[d2$Target=="F"&d2$Country=="Vietnam",]$Country <- NA
+d2 <- d2 %>% filter(is.na(Country)==F)
+
+# Set Target Type to be ancient for visualization (To see relationship with ancietn samples only)
+#d2[d2$Target=="T"&d2$Country=="Vietnam",]$Type <- "ancient"
+
+# Subset 
+# To see relationship with neighboting pops
+#d2 <- d2 %>% filter(Type=="modern"&Language=="Austro-Asiatic")
+d2 <- d2 %>% filter(Type=="modern")
+# To see relationship with ancient samples
+#d2 <- d2 %>% filter(Type=="ancient"&Language=="Austro-Asiatic")
+#d2 <- d2 %>% filter(Type=="ancient"&Language=="Austro-Asiatic"&Pop2!="P-Tianyuan")
+#d2 <- d2 %>% filter(Type=="ancient"&Pop2!="P-Tianyuan")
+# To see relationship within Vietnam
+#d2 <- d2 %>% filter(Type=="modern"&Country=="Vietnam"&Language=="Sino-Tibetan")
 
 # Order by Period
 d2$Period <- factor(d2$Period, levels=c("Present","Historical","Iron_Age","Bronze_Age","Neolithic","Hoabinhian","Paleolithic"), ordered=T)
@@ -369,21 +385,42 @@ p <- ggplot()
 p <- p + theme()
 p <- p + geom_map(data=map.world, map=map.world, aes(map_id=region, x=long, y=lat), fill="white", colour="grey", size=0.15)
 p <- p + coord_quickmap(ylim=c(min(d2$Latitude),max(d2$Latitude)), xlim=c(min(d2$Longitude),max(d2$Longitude))) 
-p <- p + geom_point(data=d2, aes(x=Longitude, y=Latitude, color=normalized_f3, pch=Period), size=3) 
-p <- p + scale_colour_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"))
+p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Latitude, fill=normalized_f3), size=3, pch=21)
+#jitter <- position_jitter(width = 0.5, height = 0.5) # Ancient only
+#p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Latitude, color=normalized_f3, pch=Period), size=3, stroke=1, position=jitter) # Ancient only
+#jitter <- position_jitter(width = 0.2, height = 0.2)
+#p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Latitude, fill=normalized_f3), size=3, position=jitter, pch=21)
+#p <- p + scale_color_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00")) # Ancient only
+p <- p + scale_fill_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00"))
 p <- p + scale_shape_manual(values=c("Present"=19,"Historical"=7,"Iron_Age"=8,"Bronze_Age"=9,"Neolithic"=10,"Hoabinhian"=11,"Paleolithic"=12))
-p <- p + geom_point(data=d2[d2$Target=="T",], aes(x=Longitude, y=Latitude), pch=17, size=4, color="black")
-p <- p + facet_wrap(.~Pop, ncol=3)
-#p <- p + facet_wrap(.~Pop, nrow=4)
+p <- p + geom_point(data=d2[d2$Target=="T",], aes(x=Longitude, y=Latitude), pch=3, size=3, color="#000000", stroke=2)
+#p <- p + facet_wrap(.~Pop, ncol=3)
+p <- p + facet_wrap(.~Pop, nrow=4)
 p <- p + geom_text_repel(
   data=d2[d2$normalized_f3>0.99&is.na(d2$normalized_f3)==F,], 
   aes(x=Longitude, y=Latitude,label=Pop2),
   size=4,
   point.padding=0.25,
   segment.alpha=0.5)
+#p <- p + geom_text_repel(
+#  data=d2[d2$normalized_f3>0.99&is.na(d2$normalized_f3)==F&d2$Longitude>=104,], 
+#  aes(x=Longitude, y=Latitude,label=Pop2), 
+#  nudge_x=110-d2[d2$normalized_f3>0.99&is.na(d2$normalized_f3)==F&d2$Longitude>=104,]$Longitude,
+#  hjust=0,
+#  size=4, 
+#  segment.alpha=0.5,
+#  direction="y")
+#p <- p + geom_text_repel(
+#  data=d2[d2$normalized_f3>0.99&is.na(d2$normalized_f3)==F&d2$Longitude<104,], 
+#  aes(x=Longitude, y=Latitude,label=Pop2), 
+#  nudge_x=85-d2[d2$normalized_f3>0.99&is.na(d2$normalized_f3)==F&d2$Longitude<104,]$Longitude,
+#  hjust=0,
+#  size=4, 
+#  segment.alpha=0.5,
+#  direction="y")
 p <- p + theme(legend.text = element_text(size = 12), legend.title = element_text(size = 14))
 p <- p + theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14))
 p <- p + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text(size = 10))
 p <- p + theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size=12))
-p <- p + xlab("Longitude") + ylab("Latitude")
+p <- p + labs(x="Longitude", y="Latitude", color=expression(paste("Normalized ", italic("f3"))))
 p
