@@ -10,7 +10,7 @@ data <- eigenstrat('/mnt/scratch/dang/Vietnam/pca/outgroup.v2/SEA.SC.TW.merged3.
 
 ind <- read_ind(data)
 pops <- unique(ind$label)
-ancient <- c("Hon_Hai_Co_Tien","Kinabatagan","Supu_Hujung","Long_Long_Rak","Vat_Komnou","Nui_Nap","Loyang_Ujung","Mai_Da_Dieu","Nam_Tun","Oakaiel","Tam_Pa_Ping","Tam_Hang","Man_Bac","Gua_Cha","Pha_Faen","Tianyuan")
+ancient <- c("Hi-Hon_Hai_Co_Tien","Hi-Kinabatagan","Hi-Supu_Hujung","IA-Long_Long_Rak","IA-Vat_Komnou","BA-Nui_Nap","N-Hon_Hai_Co_Tien","N-Loyang_Ujung","N-Mai_Da_Dieu","N-Nam_Tun","N-Oakaie","N-Tam_Pa_Ling","N-Tam_Hang","N-Man_Bac","N-Gua_Cha","Ho-Gua_Cha","Ho-Pha_Faen","P-Tianyuan")
 modern_drift <- c("Mamanwa", "Jehai", "Mlabri","Onge")
 
 # re-label pops
