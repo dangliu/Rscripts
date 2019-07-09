@@ -1,7 +1,7 @@
 # title: "ADMIXTURE on GW data"
 # author: "Dang Liu 19.Dec.2018"
 
-# Last updated: 25.Feb.2019
+# Last updated: 21.Apr.2019
 
 # Use libraries
 library(tidyverse)
@@ -10,11 +10,11 @@ library(reshape2)
 # Determine the best K based on cross-validation error rate (the K with the lowest CV) 
 
 # read CV.log
-cv <- read.table("/mnt/scratch/dang/Vietnam/admixture/nodrift.SEA.SC.TW.merged3.am.pruned.CV_1-10.log")
+cv <- read.table("/mnt/scratch/dang/Vietnam/admixture/outgroup.v2/CV_2-15.log")
 colnames(cv) <- c("K", "error")
 head(cv)
 cv$K <- as.character(cv$K)
-cv$K <- factor(cv$K, levels=c("1","2","3","4","5","6","7","8","9","10"))
+cv$K <- factor(cv$K, levels=c("2","3","4","5","6","7","8","9","10","11","12","13","14","15"))
 # plot 
 p0 <- ggplot(cv, aes(K, error)) + geom_boxplot()
 p0 <- p0 + geom_hline(yintercept=min(cv$error), linetype="dashed", col="grey")
