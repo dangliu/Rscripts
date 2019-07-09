@@ -1,35 +1,35 @@
 # title: "Heatmap of PCA on GW data"
 # author: "Dang Liu 14.Dec.2018"
 
-# Last updated: 25.Feb.2019
+# Last updated: 14.Jun.2019
 
 # Use libraries
-library(ggplot2)
+library(tidyverse)
 library(RColorBrewer)
-library(dplyr)
 library(pheatmap)
 library(gtools)
 
 
 # Read data
-data <- read.table("/mnt/scratch/dang/Vietnam/pca/ancient_proj/SEA.SC.TW.merged3.am.nodrift.lsqproj.evec",header=F)
-info <- read.table("/mnt/scratch/dang/Vietnam/pca/ancient_proj/SEA.SC.TW.merged3.am.filtered.info", header=T)
+data <- read.table("/mnt/scratch/dang/Vietnam/pca/outgroup.v2/SEA.SC.TW.merged3.outgroup.v2.noFM.pruned.evec",header=F)
+info <- read.table("/mnt/scratch/dang/Vietnam/map/all.map.am.geo.info2", header=T)
 # Arrange data
 colnames(data) <- c("IID","PC1","PC2","PC3","PC4","PC5","PC6","PC7","PC8","PC9","PC10","C")
 data <- data[,!(colnames(data)=="C")] 
 data <- info[,!(colnames(info)=="Type")] %>% left_join(data)
+data <- data[!data$Pop%in%c("French","Mbuti"),] 
 head(data)
-data <- data[data$IID!="I2497",]
+
 
 # Sort data by country
 # Ref: https://stackoverflow.com/questions/1296646/how-to-sort-a-dataframe-by-multiple-columns
 # Ref2: https://www.statmethods.net/management/sorting.html
-data$Country <- factor(data$Country, levels=c("Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines"))
+data$Country <- factor(data$Country, levels=c("Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India"))
 data <- data[order(data$Country),]
 
 # Normalizing the sample PC vectors on each PC
 norm_data <- data
-n <- 5
+n <- 10
 while(n<ncol(data)){
   n <- n+1
   norm_data[,n] <- (norm_data[,n]+(0-min(data[,n])))/max(data[,n]+(0-min(data[,n])))
@@ -37,7 +37,7 @@ while(n<ncol(data)){
 
 # Subset the information with only IID and PCs
 # Trun them into a matrix
-norm_data_n <- norm_data[,6:ncol(data)]
+norm_data_n <- norm_data[,11:ncol(data)]
 rownames(norm_data_n) <- data$IID
 norm_data_n <- as.matrix(norm_data_n)
 # Transpose
@@ -65,7 +65,7 @@ annotation <- norm_data %>% select(Country)
 rownames(annotation) <- rownames(norm_data_n)
 # Specify colors
 ann_colors = list(
-  Country = c(Taiwan="#A6CEE3",China="#1F78B4",Vietnam="#B2DF8A",Cambodia="#33A02C",Laos="#FB9A99",Thailand="#E31A1C",Myanmar="#FDBF6F",Malaysia="#FF7F00",Indonesia="#CAB2D6",Philippines="#6A3D9A")
+  Country = c(Taiwan="#A6CEE3",China="#1F78B4",Vietnam="#B2DF8A",Cambodia="#33A02C",Laos="#FB9A99",Thailand="#E31A1C",Myanmar="#FDBF6F",Malaysia="#FF7F00",Indonesia="#CAB2D6",Philippines="#6A3D9A",India="#B15928")
 )
 
 # plot heatmap
@@ -96,7 +96,7 @@ df_heatmap <- heatmap(norm_data_n, Rowv=NA, Colv=NA, col = heat.colors(256), sca
 ###############################################################################
 
 # Read data
-data <- read.table("/mnt/scratch/dang/Vietnam/pca/outgroup.v2/Vietnam.am.pruned.evec",header=F)
+data <- read.table("/mnt/scratch/dang/Vietnam/pca/outgroup.v2/SEA.SC.TW.merged3.outgroup.v2.noFM.pruned.evec",header=F)
 info <- read.table("/mnt/scratch/dang/Vietnam/map/all.map.am.geo.info2", header=T)
 # Arrange data
 colnames(data) <- c("IID","PC1","PC2","PC3","PC4","PC5","PC6","PC7","PC8","PC9","PC10","C")
@@ -122,7 +122,7 @@ data <- data[order(data$Language),]
 
 # Normalizing the sample PC vectors on each PC
 norm_data <- data
-n <- 10
+n <- 11
 while(n<ncol(data)){
   n <- n+1
   norm_data[,n] <- (norm_data[,n]+(0-min(data[,n])))/max(data[,n]+(0-min(data[,n])))
@@ -130,7 +130,7 @@ while(n<ncol(data)){
 
 # Subset the information with only IID and PCs
 # Trun them into a matrix
-norm_data_n <- norm_data[,11:ncol(data)]
+norm_data_n <- norm_data[,12:ncol(data)]
 rownames(norm_data_n) <- data$IID
 norm_data_n <- as.matrix(norm_data_n)
 # Transpose
