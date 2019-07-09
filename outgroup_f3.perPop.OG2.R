@@ -324,8 +324,8 @@ d <- mutate(d,Language = ifelse(Pop%in%c("KhoMu","Kinh","Mang","Muong"),"Austro-
 
 # Subset data here
 # Only Vietnam modern
-d2 <- d[d$Language!="NA",]
-
+#d2 <- d[d$Language!="NA",]
+d2 <- d
 
 # Deal with results which Pop=Pop2
 # Set them with a Target tag
@@ -345,10 +345,16 @@ d2 <- d2 %>% filter(is.na(Country)==F)
 d2 <- d2 %>% filter(Type=="modern")
 # To see relationship with ancient samples
 #d2 <- d2 %>% filter(Type=="ancient"&Language=="Austro-Asiatic")
-#d2 <- d2 %>% filter(Type=="ancient"&Language=="Austro-Asiatic"&Pop2!="P-Tianyuan")
+#d2 <- d2 %>% filter(Type=="ancient"&Language=="Sino-Tibetan"&Pop2!="P-Tianyuan")
 #d2 <- d2 %>% filter(Type=="ancient"&Pop2!="P-Tianyuan")
 # To see relationship within Vietnam
 #d2 <- d2 %>% filter(Type=="modern"&Country=="Vietnam"&Language=="Sino-Tibetan")
+# To see relationship from the point of view of ancient samples
+#d2[d2$Type=="ancient"&d2$Country=="Vietnam",]$Country <- "Thailand"
+#d2[d2$Target=="T"&d2$Type=="ancient",]$Country <- "Vietnam"
+#d2 <- d2 %>% filter(Pop%in%c("P-Tianyuan","Ho-Pha_Faen","Ho-Gua_Cha","N-Gua_Cha","N-Man_Bac","N-Nam_Tun","N-Mai_Da_Dieu","N-Hon_Hai_Co_Tien",
+#                             "N-Tam_Pa_Ling","N-Tam_Hang","N-Oakaie","N-Loyang_Ujung","BA-Nui_Nap","IA-Vat_Komnou","IA-Long_Long_Rak","Hi-Hon_Hai_Co_Tien","Hi-Supu_Hujung","Hi-Kinabatagan")
+#                    &Country=="Vietnam")
 
 # Order by Period
 d2$Period <- factor(d2$Period, levels=c("Present","Historical","Iron_Age","Bronze_Age","Neolithic","Hoabinhian","Paleolithic"), ordered=T)
@@ -356,7 +362,7 @@ d2 <- d2[order(d2$Period),]
 
 # Order by Language groups
 d2$Pop <- factor(d2$Pop, levels=c("BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cham","Ede","Giarai","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila","KhoMu","Kinh","Mang","Muong"), ordered=T)
-
+#d2$Pop <- factor(d2$Pop, levels=c("P-Tianyuan","Ho-Pha_Faen","Ho-Gua_Cha","N-Gua_Cha","N-Man_Bac","N-Nam_Tun","N-Mai_Da_Dieu","N-Hon_Hai_Co_Tien","N-Tam_Pa_Ling","N-Tam_Hang","N-Oakaie","N-Loyang_Ujung","BA-Nui_Nap","IA-Vat_Komnou","IA-Long_Long_Rak","Hi-Hon_Hai_Co_Tien","Hi-Supu_Hujung","Hi-Kinabatagan"), ordered=T)
 
 # Normalization for min to max --> 0 to 1
 d2$normalized_f3 <- "NA"
@@ -390,8 +396,8 @@ p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Lat
 #p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Latitude, color=normalized_f3, pch=Period), size=3, stroke=1, position=jitter) # Ancient only
 #jitter <- position_jitter(width = 0.2, height = 0.2)
 #p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Latitude, fill=normalized_f3), size=3, position=jitter, pch=21)
-#p <- p + scale_color_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00")) # Ancient only
-p <- p + scale_fill_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00"))
+p <- p + scale_color_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00")) # Ancient only
+#p <- p + scale_fill_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00"))
 p <- p + scale_shape_manual(values=c("Present"=19,"Historical"=7,"Iron_Age"=8,"Bronze_Age"=9,"Neolithic"=10,"Hoabinhian"=11,"Paleolithic"=12))
 p <- p + geom_point(data=d2[d2$Target=="T",], aes(x=Longitude, y=Latitude), pch=3, size=3, color="#000000", stroke=2)
 #p <- p + facet_wrap(.~Pop, ncol=3)
