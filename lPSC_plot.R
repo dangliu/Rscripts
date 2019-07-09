@@ -1,6 +1,6 @@
 # author: "Dang Liu 08.Apr.2019"
 
-# Last updated: 08.Apr.2019
+# Last updated: 03.Jul.2019
 
 # Use libraries
 library(tidyverse)
@@ -9,6 +9,8 @@ library(gtools)
 library(ggmap)
 library(maps)
 library(ggrepel)
+library(pheatmap)
+
 
 
 # Read between data
@@ -276,9 +278,9 @@ p
 
 data <- read_delim("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_m2/all.lPSC.Merged.over10cM.stats",delim="\t")
 pop_order <- read_delim("/mnt/scratch/dang/Vietnam/admixture/outgroup.v2/pong_pop_order.txt",delim="\t",col_names = F)
-Affy6 <- c("Puyuma","Saisiat","Manobo","Ternate","Temuan","Roti","Hiri","Besemah","Alor","Flores","Timor","Bidayuh","Jehai")
+Affy6 <- c("Puyuma","Saisiat","Manobo","Ternate","Temuan","Roti","Hiri","Besemah","Alor","Flores","Timor","Bidayuh","Jehai","Pingpu","Rukai","Paiwan","Bunun")
 Outgroup <- c("French", "Mbuti")
-Ancient <- c("Hon_Hai_Co_Tien","Kinabatagan","Supu_Hujung","Long_Long_Rak","Vat_Komnou","Nui_Nap","Loyang_Ujung","Mai_Da_Dieu","Nam_Tun","Oakaiel","Tam_Pa_Ping","Tam_Hang","Gua_Cha_N","Man_Bac","Gua_Cha_H","Pha_Faen","Tianyuan")
+Ancient <- c("P-Tianyuan","Ho-Pha_Faen","Ho-Gua_Cha","N-Gua_Cha","N-Man_Bac","N-Nam_Tun","N-Mai_Da_Dieu","N-Hon_Hai_Co_Tien","N-Tam_Pa_Ling","N-Tam_Hang","N-Oakaie","N-Loyang_Ujung","BA-Nui_Nap","IA-Vat_Komnou","IA-Long_Long_Rak","Hi-Hon_Hai_Co_Tien","Hi-Supu_Hujung","Hi-Kinabatagan")
 pop_exclude <- c(Outgroup, Ancient,Affy6)
 m_data <- data %>% filter(!Pop1%in%pop_exclude&!Pop2%in%pop_exclude)
 m_pop_order <- pop_order %>% filter(!X1%in%pop_exclude)
@@ -372,3 +374,75 @@ p2 <- p2 + theme(axis.title.x = element_text(size = 14), axis.title.y = element_
 p2 <- p2 + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text(size = 10))
 p2
 
+##########################################################################################################################
+# heatmap
+
+data <- read_delim("/mnt/scratch/dang/Vietnam/IBD/SHAPEIT_ref_m2/all.lPSC.Merged.least2CM.stats",delim="\t")
+info <- read_csv("/r1/people/dang_liu/Projects/Vietnam/Vietnam.metadata.csv")
+pop_order <- read_delim("/mnt/scratch/dang/Vietnam/admixture/outgroup.v2/pong_pop_order.txt",delim="\t",col_names = F)
+Affy6 <- c("Puyuma","Saisiat","Manobo","Ternate","Temuan","Roti","Hiri","Besemah","Alor","Flores","Timor","Bidayuh","Jehai","Pingpu","Rukai","Paiwan","Bunun")
+Outgroup <- c("French", "Mbuti")
+Ancient <- c("P-Tianyuan","Ho-Pha_Faen","Ho-Gua_Cha","N-Gua_Cha","N-Man_Bac","N-Nam_Tun","N-Mai_Da_Dieu","N-Hon_Hai_Co_Tien","N-Tam_Pa_Ling","N-Tam_Hang","N-Oakaie","N-Loyang_Ujung","BA-Nui_Nap","IA-Vat_Komnou","IA-Long_Long_Rak","Hi-Hon_Hai_Co_Tien","Hi-Supu_Hujung","Hi-Kinabatagan")
+pop_exclude <- c(Outgroup, Ancient,Affy6)
+m_data <- data %>% filter(!Pop1%in%pop_exclude&!Pop2%in%pop_exclude)
+m_pop_order <- pop_order %>% filter(!X1%in%pop_exclude)
+d.matrix <- matrix(0, nrow = nrow(m_pop_order), ncol = nrow(m_pop_order))
+colnames(d.matrix) <- m_pop_order$X1
+rownames(d.matrix) <- m_pop_order$X1
+for (i in m_pop_order$X1){
+  for (j in m_pop_order$X1) {
+    if (is.na(m_data[m_data$Pop1==i&m_data$Pop2==j,]$Average)==F){
+      d.matrix[i,j] <- ifelse(i!=j, m_data[m_data$Pop1==i&m_data$Pop2==j,]$Average, NA)
+    }
+  }
+} 
+
+# Normalizing
+norm_data <- d.matrix
+#n <- 0
+#c <- 0
+#while(n<nrow(d.matrix)){
+#  n <- n+1
+#  while(c<ncol(d.matrix)){
+#    c <- c+1
+#    if (is.na(norm_data[n,c])==T){norm_data[n,c] <- 0}
+#    #norm_data[,n] <- 1-(norm_data[,n]+(0-min(data[,n])))/max(data[,n]+(0-min(data[,n])))
+#  }
+#  c <- 0
+#}
+
+#n <- 0
+#while(n<ncol(norm_data)){
+#  n <- n+1
+#  norm_data[,n] <- (norm_data[,n]+(0-min(norm_data[,n],na.rm=T)))/max(norm_data[,n]+(0-min(norm_data[,n],na.rm=T)),na.rm=T)
+#}
+
+
+# annotaion here
+colnames(m_pop_order)[1] <- "Pop"
+annotation <- as.data.frame(m_pop_order) %>% left_join(info) %>% distinct(Pop, .keep_all = TRUE) %>% select(Country) 
+rownames(annotation) <- rownames(norm_data)
+# Specify colors
+ann_colors = list(
+  Country = c(Taiwan="#A6CEE3",China="#1F78B4",Vietnam="#B2DF8A",Cambodia="#33A02C",Laos="#FB9A99",Thailand="#E31A1C",Myanmar="#FDBF6F",Malaysia="#FF7F00",Indonesia="#CAB2D6",Philippines="#6A3D9A",India="#B15928")
+)
+
+#ann_colors = list(
+#  Language = c(Austronesian="#CC6633",Austro-Asiatic="#9966CC",Hmong-Mien="#FFCC33",Sino-Tibetan="#66CC99",Tai-Kadai="#CC0033",
+#               Indo-European="#FFCCFF",Dravidian="#CC0099",Andamanese="#660033",Mongolic="#0000FF",Tungusic="#66CCFF",Ancient="#000000")
+#)
+
+# plot heatmap
+res <- pheatmap(
+  color= colorRampPalette(c("navy", "white", "firebrick3"))(10),
+  fontsize_number=12,
+  fontsize_row=12,
+  fontsize_col=12,
+  cellwidth=NA,
+  cellheight=NA,
+  as.matrix(norm_data),
+  #display_numbers=as.matrix(df.mat),
+  annotation=annotation,
+  annotation_colors=ann_colors, 
+  cluster_rows=FALSE, cluster_cols=FALSE
+)
