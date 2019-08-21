@@ -36,7 +36,7 @@ data <- data[,!(colnames(data)=="C")]
 data <- info %>% left_join(data) %>% left_join(pop_N)
 head(data)
 data <- data[is.na(data$PC1)==F,]
-data$Country <- factor(data$Country, levels=c("Ancient","Taiwan","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India","France","Congo"))
+data$Country <- factor(data$Country, levels=c("Ancient","Taiwan","Mongolia","China","Vietnam","Cambodia","Laos","Thailand","Myanmar","Malaysia","Indonesia","Philippines","India","France","Congo"))
 #brewer.pal(n = 13, name = "Paired")
 
 #data$Language <- "X"
@@ -51,7 +51,7 @@ data$Country <- factor(data$Country, levels=c("Ancient","Taiwan","China","Vietna
 # Pop, text
 # Ref_ellipse: https://ggplot2.tidyverse.org/reference/stat_ellipse.html
 # Flip PC2 to match the geography
-ann_colors = c(Taiwan="#A6CEE3",China="#1F78B4",Vietnam="#B2DF8A",Cambodia="#33A02C",Laos="#FB9A99",Thailand="#E31A1C",Myanmar="#FDBF6F",Malaysia="#FF7F00",Indonesia="#CAB2D6",Philippines="#6A3D9A",India="#B15928","Austronesian"="#CC6633","Austro-Asiatic"="#9966CC","Hmong-Mien"="#FFCC33","Sino-Tibetan"="#66CC99","Tai-Kadai"="#CC0033")
+ann_colors = c(Taiwan="#A6CEE3",Mongolia="#CC9900",China="#1F78B4",Vietnam="#B2DF8A",Cambodia="#33A02C",Laos="#FB9A99",Thailand="#E31A1C",Myanmar="#FDBF6F",Malaysia="#FF7F00",Indonesia="#CAB2D6",Philippines="#6A3D9A",India="#B15928","Austronesian"="#CC6633","Austro-Asiatic"="#9966CC","Hmong-Mien"="#FFCC33","Sino-Tibetan"="#66CC99","Tai-Kadai"="#CC0033")
 
 p4 <- ggplot(data, aes(x=-PC1,y=-PC2,color=Country))
 #p4 <- p4 + geom_point(data=data[data$Language!="X",], pch=20, aes(color=Language), size=9, alpha=1)
