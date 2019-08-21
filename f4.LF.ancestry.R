@@ -29,6 +29,7 @@ result <- f4(W = c("Htin_Mal", "Atayal", "Miao", "Dai", "Naxi"), X = "Han", Y = 
 #result <- f4(W = c("Htin_Mal", "Atayal", "Miao", "Dai", "Naxi"), X = "N-Man_Bac", Y = Vietnam, Z = "Mbuti", data = data)
 #result <- f4(W = c("Htin_Mal", "Atayal", "Miao", "Dai", "Lahu"), X = "BA-Nui_Nap", Y = Vietnam, Z = "Mbuti", data = data)
 #result <- f4(W = c("Htin_Mal", "Atayal", "Miao", "Dai", "Lahu"), X = "IA-Long_Long_Rak", Y = Vietnam, Z = "Mbuti", data = data)
+#result <- f4(W = c("Htin_Mal", "Atayal", "Miao", "Dai", "Lahu"), X = "Hi-Hon_Hai_Co_Tien", Y = Vietnam, Z = "Mbuti", data = data)
 
 d <- result
 colnames(info)[3] <- "Y"
@@ -38,8 +39,8 @@ d <- d %>% left_join(select(info, c("Y", "Language")))
 
 d$Y <- factor(d$Y, levels=c("Cham","Ede","Giarai","KhoMu","Kinh","Mang","Muong","BoY","CoLao","LaChi","Nung","Tay","Thai","Dao","Hmong","PaThen","Cong","HaNhi","LaHu","LoLo","PhuLa","Sila"), ordered=T)
 
-#d$W <- factor(d$W, levels=c("Htin_Mal", "Atayal", "Miao", "Dai", "Lahu"), ordered=T)
-d$W <- factor(d$W, levels=c("Htin_Mal", "Atayal", "Miao", "Dai", "Naxi"), ordered=T)
+d$W <- factor(d$W, levels=c("Htin_Mal", "Atayal", "Miao", "Dai", "Lahu"), ordered=T)
+#d$W <- factor(d$W, levels=c("Htin_Mal", "Atayal", "Miao", "Dai", "Naxi"), ordered=T)
 
 
 Language = c("Austronesian"="#CC6633","Austro-Asiatic"="#9966CC","Hmong-Mien"="#FFCC33","Sino-Tibetan"="#66CC99","Tai-Kadai"="#CC0033",
@@ -67,6 +68,9 @@ d %>%
   theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size = 12))
 
 ############################################Ancient ancestry###########################################################
+
+# Count the transversions only snps
+count <- data %>% transversions_only() %>% count_snps()
 
 #result <- data %>% f4(W = c("Onge", "Ho-Pha_Faen", "N-Tam_Pa_Ling", "N-Oakaie", "Hi-Hon_Hai_Co_Tien"), X = "Han", Y = Vietnam, Z = "Mbuti")
 result <- data %>% f4(W = c("Onge", "Ho-Gua_Cha", "N-Gua_Cha", "N-Hon_Hai_Co_Tien", "Hi-Hon_Hai_Co_Tien"), X = "Han", Y = Vietnam, Z = "Mbuti")
@@ -116,3 +120,29 @@ d %>%
   theme(axis.title.x = element_text(size = 14, face = "italic"), axis.title.y = element_text(size = 14)) + 
   theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size = 12))
+
+###################Test for ancient samples during period transitions##################################
+relabel <- data %>% relabel(AA_AN=c("Mlabri","Htin_Mal","Atayal","Borneo","Ami","Mamamwa"),TK_HM_ST=c("Dai","Miao","Lahu","Han","Han_NC"))
+result <- relabel %>% f4(W="TK_HM_ST",X="AA_AN",Y=Ancient,Z="Mbuti")
+#result <- relabel %>% transversions_only() %>% f4(W="TK_HM_ST",X="AA_AN",Y=Ancient,Z="Mbuti")
+d <- result
+d$Y <- factor(d$Y, levels=c("P-Tianyuan","Ho-Pha_Faen","Ho-Gua_Cha","N-Gua_Cha","N-Man_Bac","N-Nam_Tun","N-Mai_Da_Dieu","N-Hon_Hai_Co_Tien","N-Tam_Pa_Ling","N-Tam_Hang","N-Oakaie","N-Loyang_Ujung","BA-Nui_Nap","IA-Vat_Komnou","IA-Long_Long_Rak","Hi-Hon_Hai_Co_Tien","Hi-Supu_Hujung","Hi-Kinabatagan"))
+d %>%
+  +   mutate(Significant=as.factor(abs(Zscore)>3)) %>%
+  +   ggplot(aes(y=f4, x=Y, ymin=f4-3*stderr, ymax=f4+3*stderr)) + 
+  +   #geom_hline(data=d.max, aes(yintercept=MAX), color="grey", linetype="dashed") +
+  +   geom_hline(yintercept=0, color="grey") +
+  +   geom_point(aes(pch=Significant), size=2) + 
+  +   geom_errorbar() +
+  +   coord_flip() +
+  +   #scale_color_manual(values = c("FALSE"="#999999", "TRUE"="#CC0033")) +
+  +   scale_shape_manual(values = c("FALSE"=4, "TRUE"=19)) +
+  +   theme(axis.line.x = element_line(color="black", size = 0.5, linetype = 1),
+            +         axis.line.y = element_line(color="black", size = 0.5, linetype = 1)) +
+  +   theme(panel.background = element_blank()) +
+  +   labs(x=NULL, color=NULL, pch="|Z| > 3") +
+  +   theme(legend.text = element_text(size = 12), legend.title = element_text(size = 12)) +
+  +   theme(axis.title.x = element_text(size = 14, face = "italic"), axis.title.y = element_text(size = 14)) + 
+  +   theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
+  +   theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size = 12))
+
