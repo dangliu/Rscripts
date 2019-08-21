@@ -342,11 +342,11 @@ d2 <- d2 %>% filter(is.na(Country)==F)
 # Subset 
 # To see relationship with neighboting pops
 #d2 <- d2 %>% filter(Type=="modern"&Language=="Austro-Asiatic")
-d2 <- d2 %>% filter(Type=="modern")
+d2 <- d2 %>% filter(Type=="modern"&Language!="NA")
 # To see relationship with ancient samples
 #d2 <- d2 %>% filter(Type=="ancient"&Language=="Austro-Asiatic")
 #d2 <- d2 %>% filter(Type=="ancient"&Language=="Sino-Tibetan"&Pop2!="P-Tianyuan")
-#d2 <- d2 %>% filter(Type=="ancient"&Pop2!="P-Tianyuan")
+#d2 <- d2 %>% filter(Type=="ancient"&Pop2!="P-Tianyuan"&Language!="NA")
 # To see relationship within Vietnam
 #d2 <- d2 %>% filter(Type=="modern"&Country=="Vietnam"&Language=="Sino-Tibetan")
 # To see relationship from the point of view of ancient samples
@@ -396,8 +396,8 @@ p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Lat
 #p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Latitude, color=normalized_f3, pch=Period), size=3, stroke=1, position=jitter) # Ancient only
 #jitter <- position_jitter(width = 0.2, height = 0.2)
 #p <- p + geom_point(data=d2[is.na(d2$normalized_f3)==F,], aes(x=Longitude, y=Latitude, fill=normalized_f3), size=3, position=jitter, pch=21)
-p <- p + scale_color_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00")) # Ancient only
-#p <- p + scale_fill_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00"))
+#p <- p + scale_color_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00")) # Ancient only
+p <- p + scale_fill_gradientn(colours = c("#4575B4", "#FFEDA0", "#D73027"), labels=c("<= 0.75","0.80", "0.85", "0.90", "0.95", "1.00"))
 p <- p + scale_shape_manual(values=c("Present"=19,"Historical"=7,"Iron_Age"=8,"Bronze_Age"=9,"Neolithic"=10,"Hoabinhian"=11,"Paleolithic"=12))
 p <- p + geom_point(data=d2[d2$Target=="T",], aes(x=Longitude, y=Latitude), pch=3, size=3, color="#000000", stroke=2)
 #p <- p + facet_wrap(.~Pop, ncol=3)
@@ -428,5 +428,6 @@ p <- p + theme(legend.text = element_text(size = 12), legend.title = element_tex
 p <- p + theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14))
 p <- p + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text(size = 10))
 p <- p + theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size=12))
-p <- p + labs(x="Longitude", y="Latitude", color=expression(paste("Normalized ", italic("f3"))))
+#p <- p + labs(x="Longitude", y="Latitude", color=expression(paste("Normalized ", italic("f3"))))
+p <- p + labs(x="Longitude", y="Latitude", fill=expression(paste("Normalized ", italic("f3"))))
 p
