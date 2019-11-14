@@ -1,6 +1,6 @@
 # author: "Dang Liu 08.Apr.2019"
 
-# Last updated: 28.Jun.2019
+# Last updated: 21.Oct.2019
 
 # Use libraries
 library(tidyverse)
@@ -52,8 +52,7 @@ p <- p + theme(strip.text.x = element_text(size = 12), strip.text.y = element_te
 #p <- p + scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100))
 p <- p + scale_x_continuous(breaks = c(0, 10, 20, 30, 40, 50))
 p <- p + scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
-                       labels = scales::trans_format("log10", scales::math_format(10^.x)),
-                       limits = c(10, 1e11))
+                       labels = scales::trans_format("log10", scales::math_format(10^.x))) + coord_cartesian(ylim=c(10, 1e11))
 #p <- p + scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x), 
 #                       labels = scales::trans_format("log10", scales::math_format(10^.x)))
 p
