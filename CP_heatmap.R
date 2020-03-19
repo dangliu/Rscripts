@@ -1,5 +1,5 @@
 # Script to visualize Chromopainter painting results
-# Last updated: 11.Mar.2020
+# Last updated: 19.Mar.2020
 
 # Use libraries
 library(pheatmap)
@@ -14,13 +14,13 @@ library(tidyverse)
 #CPI <- read.table("/mnt/scratch/dang/Thailand/Chromopainter/Thai_R/CP_Thai_R.chunklengths.out", header=T, stringsAsFactors=F)
 CPI <- read.table("/mnt/scratch/dang/Thailand/Chromopainter/Thai_R/CP_Wib_Thai_R.chunklengths.out", header=T, stringsAsFactors=F)
 
-info <- read.table("/home/dang_liu/Projects/Thailand/ThaiCompare.info2-4.txt", header=T, stringsAsFactors=F)
+info <- read.table("/home/dang_liu/Projects/Thailand/ThaiCompare.info2.txt", header=T, stringsAsFactors=F)
 
 # list donors and reciepients
 #D <- c("Brahmin_Tiwari","Gujarati","Vishwabrahmin","Lodhi","Mala","Kharia","Mamanwa","Semende","Borneo","Ami","Atayal","Cambodian","Dai","Miao","She","Lahu","Yi","Naxi","Han","Tujia","Tu","Xibo","Uygur","Mongola","Hezhen","Daur","Oroqen","Japanese")
-#R <- c("Hmong","IuMien","SouthernThai_Muslim","Moken","Karen","Lisu","Mussur","Khmu","Lawa","Palaung","Blang","Htin","HtinMal","Mlabri","Soa","Bru","Mon","Khonmueang","Phutai","Laotian","LaoIsan","Yuan","Lue","Khuen","Seak","Nyaw","Kalueang","BlackTai","Phuan","CentralThai","Thai","SouthernThai_Buddhisht","Shan")
 D <- c("Brahmin_Tiwari","Gujarati","Vishwabrahmin","Lodhi","Mala","Kharia","Mamanwa","Semende","Borneo","Ami","Atayal","Mlabri","HtinMal","Thai","Cambodian","Dai","Miao","She","Lahu","Yi","Naxi","Han","Tujia","Tu","Xibo","Uygur","Mongola","Hezhen","Daur","Oroqen","Japanese")
-R <- c("Hmong","SouthernThai_Muslim","Moken","Karen","Khmu","Lawa","Palaung","Blang","Htin","Soa","Bru","Mon","Khonmueang","Phutai","Laotian","LaoIsan","Yuan","Lue","Khuen","Seak","Nyaw","Kalueang","BlackTai","Phuan","CentralThai","Thai","SouthernThai_Buddhisht","Shan")
+#R <- c("Hmong","SouthernThai_Muslim","Moken","Karen","Lawa","Palaung","Blang","Khmu","Htin","Soa","Bru","Mon","Yuan","Khuen","Phuan","Shan","Khonmueang","Lue","BlackTai","Laotian","LaoIsan","Phutai","Nyaw","Seak","Kalueang","CentralThai","Thai","SouthernThai_Buddhisht")
+R <- c("Hmong","IuMien","SouthernThai_Muslim","Moken","Lisu","Mussur","Karen","Lawa","Palaung","Blang","Khmu","Htin","Soa","Bru","Mon","Yuan","Khuen","Phuan","Shan","Khonmueang","Lue","BlackTai","Laotian","LaoIsan","Phutai","Nyaw","Seak","Kalueang","CentralThai","Thai","SouthernThai_Buddhisht")
 
 # Assign pops for the rows
 colnames(CPI)[1] <- "IID"
@@ -39,6 +39,18 @@ CPI_info <- CPI_info[order(CPI_info$Pop),]
 
 order_d_matrix <- d_matrix[CPI_info$IID, D]
 
+# Adjust for the boundry of maximum
+n <- 0
+for(i in CPI_info$IID){
+  n <- n + 1
+  m <- 0
+  for(j in D){
+    m <- m + 1
+    order_d_matrix[n,m] <- ifelse(order_d_matrix[n,m] >= 1000, 1000, order_d_matrix[n,m])
+  }
+}
+
+
 # Transpose
 t_d_matrix <- t(order_d_matrix)
 
@@ -49,7 +61,7 @@ t_d_matrix <- t(order_d_matrix)
 # Ref2: https://www.rdocumentation.org/packages/COMPASS/versions/1.10.2/topics/pheatmap
 
 # annotaion here
-info2 <- read_csv("/r1/people/dang_liu/Projects/Thailand/ThaiCompare.info2-4.csv")
+info2 <- read_csv("/r1/people/dang_liu/Projects/Thailand/ThaiCompare.info2.csv")
 annotation_col <- info2 %>% select(IID, Language) %>% distinct(IID, .keep_all = TRUE) %>% remove_rownames %>% column_to_rownames(var="IID")
 annotation_row <- info2 %>% select(Pop, Country) %>% distinct(Pop, .keep_all = TRUE) %>% remove_rownames %>% column_to_rownames(var="Pop")
 # Specify colors
@@ -81,6 +93,8 @@ res <- pheatmap(
   annotation_row=annotation_row,
   annotation_colors=ann_colors,
   labels_col=labels_col,
+  legend_breaks=c(200,400,600,800,1000),
+  legend_labels=c("200","400","600","800",">=1000"),
   angle_col=90,
   cluster_rows=FALSE, cluster_cols=FALSE
 )
