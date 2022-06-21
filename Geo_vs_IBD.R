@@ -1,18 +1,19 @@
 # Geo vs. IBD
 
-# author: "Dang Liu 01.Sep.2020"
+# author: "Dang Liu 05.Sep.2021"
 
-# Last updated: 16.Sep.2020
+# Last updated: 23.May.2022
 
 # Libraries
-library(data.table)
 library(geosphere)
-library(RColorBrewer)
-library(magrittr)
 library(tidyverse)
-library(ade4)
-library(vegan)
+library(reshape2)
 
+
+# Function
+# IBD_stats function
+# Read IBD and info files, filtering the IBD result by min, max, and chr
+# Can decide whether calculating by L (block length) or N (block number)
 IBD_stats <- function(IBD,Info,Measure="L",Chr_exclude="",min=0,max=Inf){
   # Process the IBD table
   IBD <- IBD %>% filter(LEN > min & LEN <= max & CHR!=Chr_exclude)
@@ -63,10 +64,23 @@ IBD_stats <- function(IBD,Info,Measure="L",Chr_exclude="",min=0,max=Inf){
   }
   return(IBD_M)
 }
+# IBD similarity
+S_IBD <- function(IBD_M){
+  S_IBD_M <- IBD_M
+  for (i in rownames(S_IBD_M)){
+    for(j in colnames(S_IBD_M)) {
+      S_IBD_M[i,j] <- (2 * IBD_M[i,j]) / (IBD_M[i,i] + IBD_M[j,j]) # similarity
+      #S_IBD_M[i,j] <- 1 - (2 * IBD_M[i,j]) / (IBD_M[i,i] + IBD_M[j,j]) # distance
+    }
+  }
+  return(S_IBD_M)
+}
+
 
 ## Make geo-distance matrix
 # Read info table
-info <- read.table("/mnt/scratch/dang/Kula/Kula.meta.info", header=T)
+# Modify it according to your path to these files
+info <- read.table("/home/dang_liu/Projects/Kula/code_public/IBD_scripts/Kula.meta.info", header=T)
 head(info)
 
 # Keep good quality Massim sample with geo-coordinates
@@ -75,12 +89,12 @@ info2 <- info %>% filter(Filter=="PASS" & is.na(Area)==FALSE & is.na(Longitude)=
 # Use the median of sample coordinates
 info2 <- info2 %>% group_by(Label) %>% 
   summarise_at(vars(Latitude,Longitude), funs(median(.))) %>% 
-  left_join(select(info,-(FID:IID),-(Latitude:Longitude))) %>%
+  #left_join(select(info,-(FID:IID),-(Latitude:Longitude))) %>%
+  left_join(select(info,-(IID),-(Latitude:Longitude))) %>%
   distinct(Label, .keep_all = TRUE)
 
 ## Geo matrix in kilometers
 geo_m <- distm(cbind(info2$Longitude, info2$Latitude)*(1/1000))
-
 rownames(geo_m) <- info2$Label
 colnames(geo_m) <- info2$Label
 
@@ -92,8 +106,10 @@ S_Mas <- c("Misima", "Western_Calvados", "Eastern_Calvados", "Sudest", "Rossel")
 
 Massim <- c(Collingwood_Bay, W_Mas, N_Mas, S_Mas)
 
+# 03.Sep.2021.Update Kula groupping: Kula = Kula + Half_Kula
 Kula <- c("Mainland_Eastern_Tip","Normanby","Fergusson","Trobriand", "Gawa", "Woodlark")
 Half_Kula <- c("Laughlan","Misima")
+Kula <- c(Kula, Half_Kula)
 Non_Kula <- c("Northern", "Wanigela", "Airara", "Western_Calvados", "Eastern_Calvados", "Sudest", "Rossel")
 
 
@@ -119,217 +135,78 @@ for (n in rownames(Half_Kula_geo_m)){
 #write.table(geo_m_order,"/r1/people/dang_liu/Projects/Kula/IBD/geo_m_order.csv",sep=",")
 #write.table(Kula_geo_m,"/r1/people/dang_liu/Projects/Kula/IBD/Kula_geo_m.csv",sep=",")
 
-## Effctive geo distance (Kula trade distance)
-# Read Kula effective geo csv
-
-Kula_all_eff_geo <- read_csv("/r1/people/dang_liu/Projects/Kula/IBD/Kula_effective_geo_m.csv")
-Kula_all_eff_geo_m <- as.matrix(Kula_all_eff_geo[,2:9])
-rownames(Kula_all_eff_geo_m) <- Kula_all_eff_geo$X1
-
-Kula_eff_geo_m <- Kula_all_eff_geo_m[Kula, Kula]
-
-
-for (n in rownames(Kula_eff_geo_m)){
-  for (k in colnames(Kula_eff_geo_m)){
-    Massim_eff_geo_m[n,k] <- Kula_eff_geo_m[n,k]
-  } 
-}
-
-Half_Kula_eff_geo_m <- Kula_all_eff_geo_m[c(Half_Kula, Kula), c(Half_Kula, Kula)]
-for (n in rownames(Kula_eff_geo_m)){
-  for (k in colnames(Kula_eff_geo_m)){
-    Half_Kula_eff_geo_m[n,k] <- NA
-  } 
-}
-
-Non_Kula_eff_geo_m <- Massim_geo_m
-for (n in rownames(Half_Kula_eff_geo_m)){
-  for (k in colnames(Half_Kula_eff_geo_m)){
-    Non_Kula_eff_geo_m[n,k] <- NA
-  } 
-}
 
 ## Make IBD similarity matrix
 # Read the IBD sharing input and info file
-IBD_path = "/mnt/scratch/dang/Kula/IBD/conHap/all.lPSC.Merged"
-Info_path = "/mnt/scratch/dang/Kula/Kula.meta.info"
-
+# Modify it according to your path to these files
+IBD_path = "/home/dang_liu/Projects/Kula/code_public/IBD_scripts/all.lPSC.Merged" # the merged IBD output from refinedIBD and their merge-ibd-segments.jar
+Info_path = "/home/dang_liu/Projects/Kula/code_public/IBD_scripts/Kula.meta.info" # the most important columns are the individual ID (IID), population label (Label), and QC result (Filter)
 IBD <- read_delim(IBD_path,delim="\t",col_names=F)
 colnames(IBD) <- c("IND1","HAP1","IND2","HAP2","CHR","BEGIN","END","LOD","LEN")
 Info <- read_delim(Info_path,delim="\t",col_names=T) %>% filter(Filter=="PASS")
 
-IBD_M <- IBD_stats(IBD,Info)
-
-# Add range
-#IBD_M <- IBD_stats(IBD,Info,min=1,max=5)
-#IBD_M <- IBD_stats(IBD,Info,min=5,max=10)
-#IBD_M <- IBD_stats(IBD,Info,min=10)
-
-# Order the Matrix and excluded those are not used as all populations
-S_IBD_M <- IBD_M
+# Add range from 1-5 to over 10
 # Calculate the normalized similarity value by dividing the between pop sharing with the average of each within pop sharing
-for (i in rownames(S_IBD_M)){
-  for(j in colnames(S_IBD_M)) {
-    S_IBD_M[i,j] <- (2 * IBD_M[i,j]) / (IBD_M[i,i] + IBD_M[j,j])
-    #S_IBD_M[i,j] <- 1 - (2 * IBD_M[i,j]) / (IBD_M[i,i] + IBD_M[j,j])
-  }
-}
-
-Massim_IBD_m <- S_IBD_M[Massim,Massim]
-Kula_IBD_m <- S_IBD_M[Kula,Kula]
-Half_Kula_IBD_m <- S_IBD_M[c(Half_Kula, Kula), c(Half_Kula, Kula)]
-for (n in rownames(Kula_eff_geo_m)){
-  for (k in colnames(Kula_eff_geo_m)){
-    Half_Kula_IBD_m[n,k] <- NA
-  } 
-}
-
-Non_Kula_IBD_m <- S_IBD_M[Massim,Massim]
-for (n in rownames(Half_Kula_IBD_m)){
-  for (k in colnames(Half_Kula_IBD_m)){
-    Non_Kula_IBD_m[n,k] <- NA
-  } 
-}
-
-## Mantel test for correlation between matrices 
-set.seed(10000)
-# Massim
-Massim_IBD_m.dist <- as.dist(Massim_IBD_m)
-Massim_geo_m.dist <- as.dist(Massim_geo_m)
-Massim_eff_geo_m.dist <- as.dist(Massim_eff_geo_m)
-#r1 <- mantel.rtest(Massim_IBD_m.dist, Massim_geo_m.dist, nrepet=10000)
-#r1
-#1 - r1$pvalue
-#plot(r1)
-#r1 <- mantel(Massim_IBD_m.dist, Massim_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r1 <- mantel(Massim_IBD_m.dist, Massim_geo_m.dist, method="pearson", permutations=10000, na.rm=T)
-r1
-1 - r1$signif
-#r2 <- mantel.rtest(Massim_IBD_m.dist, Massim_eff_geo_m.dist, nrepet=10000)
-#r2
-#1 - r2$pvalue
-#plot(r2)
-#r2 <- mantel(Massim_IBD_m.dist, Massim_eff_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r2 <- mantel(Massim_IBD_m.dist, Massim_eff_geo_m.dist, method="pearson", permutations=10000, na.rm=T)
-r2
-1 - r2$signif
-# Kula only
-Kula_IBD_m.dist <- as.dist(Kula_IBD_m)
-Kula_geo_m.dist <- as.dist(Kula_geo_m)
-Kula_eff_geo_m.dist <- as.dist(Kula_eff_geo_m)
-#r1 <- mantel.rtest(Kula_IBD_m.dist, Kula_geo_m.dist, nrepet=10000)
-#r1
-#1 - r1$pvalue
-#plot(r1)
-#r1 <- mantel(Kula_IBD_m.dist, Kula_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r1 <- mantel(Kula_IBD_m.dist, Kula_geo_m.dist, method="pearson", permutations=10000, na.rm=T)
-r1
-1 - r1$signif
-#r2 <- mantel.rtest(Kula_IBD_m.dist, Kula_eff_geo_m.dist, nrepet=10000)
-#r2
-#1 - r2$pvalue
-#plot(r2)
-#r2 <- mantel(Kula_IBD_m.dist, Kula_eff_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r2 <- mantel(Kula_IBD_m.dist, Kula_eff_geo_m.dist, method="pearson", permutations=10000, na.rm=T)
-r2
-1 - r2$signif
-# Half Kula only
-Half_Kula_IBD_m.dist <- as.dist(Half_Kula_IBD_m)
-Half_Kula_geo_m.dist <- as.dist(Half_Kula_geo_m)
-Half_Kula_eff_geo_m.dist <- as.dist(Half_Kula_eff_geo_m)
-#r1 <- mantel(Half_Kula_IBD_m.dist, Half_Kula_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r1 <- mantel(Half_Kula_IBD_m.dist, Half_Kula_geo_m.dist, method="pearson", permutations=10000, na.rm=T)
-r1
-1 - r1$signif
-#r2 <- mantel(Half_Kula_IBD_m.dist, Half_Kula_eff_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r2 <- mantel(Half_Kula_IBD_m.dist, Half_Kula_eff_geo_m.dist, method="pearson", permutations=10000, na.rm=T)
-r2
-1 - r2$signif
-
-# Non Kula
-Non_Kula_IBD_m.dist <- as.dist(Non_Kula_IBD_m)
-Non_Kula_geo_m.dist <- as.dist(Non_Kula_geo_m)
-Non_Kula_eff_geo_m.dist <- as.dist(Non_Kula_eff_geo_m)
-#r1 <- mantel(Non_Kula_IBD_m.dist, Non_Kula_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r1 <- mantel(Non_Kula_IBD_m.dist, Non_Kula_geo_m.dist, method="pearson", permutations=10000, na.rm=T)
-#mantel(Non_Kula_IBD_m.dist, Non_Kula_geo_m.dist, method="spearman", permutations=10000, na.rm=T)
-r1
-1 - r1$signif
-
-
-
-
-
-# For adding range
-#Kula_IBD_m_1_5 <- S_IBD_M[Kula,Kula]
-#Kula_IBD_m_5_10 <- S_IBD_M[Kula,Kula]
-#Kula_IBD_m_over10 <- S_IBD_M[Kula,Kula]
-
-#Kula_IBD_m_1_5 <- S_IBD_M[Massim,Massim]
-#Kula_IBD_m_5_10 <- S_IBD_M[Massim,Massim]
-#Kula_IBD_m_over10 <- S_IBD_M[Massim,Massim]
+# Order the Matrix and excluded those are not used as all populations
+IBD_M <- IBD_stats(IBD,Info,min=1,max=5)
+IBD_m_1_5 <- S_IBD(IBD_M)[Massim,Massim]
+IBD_M <- IBD_stats(IBD,Info,min=2,max=6)
+IBD_m_2_6 <- S_IBD(IBD_M)[Massim,Massim]
+IBD_M <- IBD_stats(IBD,Info,min=3,max=7)
+IBD_m_3_7 <- S_IBD(IBD_M)[Massim,Massim]
+IBD_M <- IBD_stats(IBD,Info,min=4,max=8)
+IBD_m_4_8 <- S_IBD(IBD_M)[Massim,Massim]
+IBD_M <- IBD_stats(IBD,Info,min=5,max=9)
+IBD_m_5_9 <- S_IBD(IBD_M)[Massim,Massim]
+IBD_M <- IBD_stats(IBD,Info,min=6,max=10)
+IBD_m_6_10 <- S_IBD(IBD_M)[Massim,Massim]
+IBD_M <- IBD_stats(IBD,Info,min=10)
+IBD_m_over10 <- S_IBD(IBD_M)[Massim,Massim]
 
 
 ## Convert both matrix into dataframe and combine them
 # don't count the within-pop sharing
-#geo_d <- Kula_geo_m %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'Geo')) %>% mutate(Type="Shortest")
-#eff_geo_d <- Kula_eff_geo_m %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'Geo')) %>% mutate(Type="Kula")
-#ibd_d <- Kula_IBD_m %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD'))
-
-geo_d <- Massim_geo_m %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'Geo')) %>% mutate(Type="Shortest")
-eff_geo_d <- Massim_eff_geo_m %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'Geo')) %>% mutate(Type="Kula")
-ibd_d <- Massim_IBD_m %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD'))
-
-
-
 
 # Add range
-#ibd_d_1_5 <- Kula_IBD_m_1_5 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="1-5")
-#ibd_d_5_10 <- Kula_IBD_m_5_10 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="5-10")
-#ibd_d_over10 <- Kula_IBD_m_over10 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="over10")
+ibd_d_1_5 <- IBD_m_1_5 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="1-5")
+ibd_d_2_6 <- IBD_m_2_6 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="2-6")
+ibd_d_3_7 <- IBD_m_3_7 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="3-7")
+ibd_d_4_8 <- IBD_m_4_8 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="4-8")
+ibd_d_5_9 <- IBD_m_5_9 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="5-9")
+ibd_d_6_10 <- IBD_m_6_10 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="6-10")
+ibd_d_over10 <- IBD_m_over10 %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'IBD')) %>% mutate(Range="over10")
 
 
-All_d <- ibd_d %>% left_join(rbind(geo_d, eff_geo_d)) %>% 
-  mutate(Type2="Non_Kula") %>% 
-  mutate(Type2=replace(Type2, Pop1%in%Kula & Pop2%in%Kula, "Kula")) %>%
-  mutate(Type2=replace(Type2, Pop1%in%Half_Kula & Pop2%in%Half_Kula, "Half_Kula")) %>%
-  mutate(Type2=replace(Type2, Pop1%in%Kula & Pop2%in%Half_Kula, "Half_Kula")) %>%
-  mutate(Type2=replace(Type2, Pop1%in%Half_Kula & Pop2%in%Kula, "Half_Kula"))
-
+geo_d <- Massim_geo_m %>% melt() %>% na.omit() %>% arrange(., Var1) %>% setNames(c('Pop1', 'Pop2', 'Geo')) %>% mutate(Type="Shortest")
 
 # Add IBD range
-#All_d <- rbind(ibd_d_1_5, ibd_d_5_10, ibd_d_over10) %>% left_join(rbind(geo_d, eff_geo_d)) %>%
-#  mutate(Type2="Non_Kula") %>% 
-#  mutate(Type2=replace(Type2, Pop1%in%Kula & Pop2%in%Kula, "Kula")) %>%
-#  mutate(Type2=replace(Type2, Pop1%in%Half_Kula & Pop2%in%Half_Kula, "Half_Kula")) %>%
-#  mutate(Type2=replace(Type2, Pop1%in%Kula & Pop2%in%Half_Kula, "Half_Kula")) %>%
-#  mutate(Type2=replace(Type2, Pop1%in%Half_Kula & Pop2%in%Kula, "Half_Kula"))
+All_d <- rbind(ibd_d_1_5, ibd_d_2_6, ibd_d_3_7, ibd_d_4_8, ibd_d_5_9, ibd_d_6_10, ibd_d_over10) %>% left_join(rbind(geo_d)) %>%
+  mutate(Type2="Non_Kula") %>% 
+  mutate(Type2=replace(Type2, Pop1%in%Kula & Pop2%in%Kula, "Kula"))
 
-#range.labs <- c("1 to 5 cM", "5 to 10 cM", "Over 10 cM")
-#names(range.labs) <- c("1-5", "5-10", "over10")
+range.labs <- c("1 to 5 cM", "2 to 6 cM", "3 to 7 cM", "4 to 8 cM", "5 to 9 cM", "6 to 10 cM", "Over 10 cM")
+names(range.labs) <- c("1-5", "2-6", "3-7", "4-8", "5-9", "6-10", "over10")
 
-All_d$Type <- factor(All_d$Type, levels=c("Shortest", "Kula"), ordered=T)
-All_d$Type2 <- factor(All_d$Type2, levels=c("Kula", "Half_Kula", "Non_Kula"), ordered=T)
-
-Group_color = c("Kula"="#6A3884", "Half_Kula"="#21908C", "Non_Kula"="#C4B286")
+All_d$Type2 <- factor(All_d$Type2, levels=c("Kula", "Non_Kula"), ordered=T)
+Group_color = c("Kula"="#6A3884", "Non_Kula"="#C4B286")
 
 ## Plot
 jitter <- position_jitter(width = 0.025, height = 0.025)
-All_d %>% ggplot(aes(x = Geo, y = IBD, fill=Type2)) +
+All_d %>% mutate(IBD=ifelse(IBD>1, 1, IBD)) %>% mutate(IBD=ifelse(IBD<0, 0, IBD)) %>% # remove the little noise and make sure IBD similarity is between 0 and 1
+  filter(Pop1!=Pop2) %>% # remove within group results
+  ggplot(aes(x = Geo, y = IBD, fill=Type2)) +
   geom_point(size=4, pch=21, position=jitter) +
-  #geom_smooth(method = lm) +
+  geom_smooth(aes(fill=Type2), method = lm, show.legend=F, color="black") +
   labs(x = "Geo distance (km)", y = "IBD similarity", fill="Group") +
-  facet_wrap(.~Type, nrow=1) +
   scale_fill_manual(values = Group_color) +
-  #scale_color_manual(values = c("red","black")) +
-  #scale_shape_manual(values = c(19, 1)) +
-  #facet_wrap(.~Type*Range, nrow=2, labeller = labeller(Range=range.labs)) +
+  #scale_y_continuous(breaks=c(0, 0.2, 0.4, 0.6, 0.8, 1.0), limits=c(0,1)) +
+  facet_wrap(.~Range, nrow=3, labeller = labeller(Range=range.labs)) +
   theme_bw() +
+  theme(legend.position = c(.85,.1)) +
   theme(legend.text = element_text(size = 12), legend.title = element_text(size = 12)) +
   theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12)) +
   theme(axis.title.x = element_text(size = 14), axis.title.y = element_text(size = 14)) +
   theme(strip.text.x = element_text(size = 12), strip.text.y = element_text(size = 12)) +
-  theme(legend.background = element_rect(color="black", 
-                                         linetype="solid"))
+  theme(legend.background = element_rect(color="black", linetype="solid"))
 
 
