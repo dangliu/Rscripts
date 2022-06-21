@@ -1,7 +1,7 @@
 # title: "ADMIXTURE on map"
 # author: "Dang Liu 21.Apr.2020"
 
-# Last updated: 25.Aug.2020
+# Last updated: 15.Dec.2021
 
 # Libraries
 library(data.table)
@@ -69,6 +69,33 @@ p <- p + theme(axis.title.x = element_text(size = 14), axis.title.y = element_te
 p <- p + theme(axis.text.x = element_text(size = 10), axis.text.y = element_text(size = 10))
 p <- p + labs(x="Longitude",y="Latitude",fill="Source")
 p
+
+# AHG
+# Define groups
+Collingwood_Bay <- c("Northern", "Wanigela", "Airara")
+W_Mas <- c("Fergusson", "Normanby", "Mainland_Eastern_Tip")
+N_Mas <- c("Trobriand", "Gawa", "Woodlark", "Laughlan")
+S_Mas <- c("Misima", "Western_Calvados", "Eastern_Calvados", "Sudest", "Rossel")
+Massim <- c(Collingwood_Bay, W_Mas, N_Mas, S_Mas)
+
+AHG_anc <- admixture %>% 
+  filter(Label%in%Massim) %>% 
+  select(Label, K5, K6, K7) %>% 
+  rename(Black="K5", Blue="K6", Pink="K7") %>%
+  arrange(factor(Label, levels = Massim), desc(Label))
+AHG <- admixture %>% 
+  filter(Label%in%Massim) %>%
+  select(Label, K5, K6, K7) %>% 
+  group_by(Label) %>% 
+  mutate(Condition=if_else(K5>=0.05&&K6>=0.05&&K7>=0.05, "PASS", "FAIL")) %>%
+  mutate(Black_Blue_Pink=cov(log(K5)-log(K6), log(K7))) %>% # Equals to mutate(Black_Blue_Pink=cov(log(K5/K6), log(K7)))
+  mutate(Blue_Pink_Black=cov(log(K6)-log(K7), log(K5))) %>%
+  mutate(Pink_Black_Blue=cov(log(K7)-log(K5), log(K6))) %>%
+  select(-(K5:K7)) %>%
+  distinct(.keep_all=T) %>%
+  arrange(factor(Label, levels = Massim), desc(Label))
+write_csv(AHG_anc, "/r1/people/dang_liu/Projects/Kula/admixture/AHG_anc.csv", quote="none")
+write_csv(AHG, "/r1/people/dang_liu/Projects/Kula/admixture/AHG.csv", quote="none")
 
 #############################################################
 
